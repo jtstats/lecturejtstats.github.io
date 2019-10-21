@@ -9,6 +9,8 @@ output:
 
 # This is Jingyi's awesome website!
 
+You can learn abour me [here](about.html)
+
 ![](https://media.giphy.com/media/drXGoW1iudhKw/giphy.gif)
 
 # Let's add some links!
