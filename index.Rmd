@@ -9,7 +9,7 @@ output:
 
 # This is Jingyi's awesome website!
 
-You can learn abour me [here](https://github.com/jtstats/Jingyi-Tang).
+You can learn abour me [here](about_me.html).
 
 ![](https://media.giphy.com/media/drXGoW1iudhKw/giphy.gif)
 
