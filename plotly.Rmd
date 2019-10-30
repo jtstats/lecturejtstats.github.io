@@ -4,8 +4,152 @@ author: "Jingyi"
 date: "10/21/2019"
 output: 
   html_document:
+    code_folding: hide
     toc: true
     toc_float: true
 ---
 
 My name is Jingyi and I make websites _with interactive graphics_!
+
+```{r}
+
+# load library
+library(tidyverse)
+library(viridis)
+library(p8105.datasets)
+library(plotly)
+
+```
+
+
+## Let's make some plots! 
+
+We’re going to focus on the Airbnb data for this topic. The code below extracts what we need right now; specifically, we select only a few of the variables, filter to include a subset of the data, and down-sample for computational efficiency.
+
+```{r}
+
+set.seed(1)
+
+data(nyc_airbnb)
+nyc_airbnb = 
+  nyc_airbnb %>% 
+  # get a 5-star scale rating from the original out of 10 scale rating 
+  mutate(rating = review_scores_location / 2) %>%
+  select(
+    neighbourhood_group, neighbourhood, rating, price, room_type, lat, long) %>%
+  filter(
+    !is.na(rating), 
+    neighbourhood_group == "Manhattan",
+    room_type == "Entire home/apt",
+    price %in% 100:500)  %>% 
+  # give a sample size of 5000 from this dataset
+  sample_n(5000)
+
+```
+
+## Plotly Scatterplot
+
+There are several practical differences comparing ggplot and plot_ly, but the underlying conceptual framework is similar. We need to define a dataset, specify how variables map to plot elements, and pick a plot type.
+
+Below we’re plotting the location (latitude and longitude) of the rentals in our dataset, and mapping price to color. We also define a new variable text_label and map that to text.
+
+The type of plot is scatter, which has several “modes”: markers produces the same kind of plot as ggplot::geom_point, lines produces the same kind of plot as ggplot::geom_line.
+
+```{r}
+
+nyc_airbnb %>%
+  mutate(text_label = str_c("Price: $", price, '\nRating: ', rating)) %>% 
+  plot_ly(
+    x = ~lat, y = ~long, type = "scatter", mode = "markers",
+    color = ~price, text = ~text_label, alpha = 0.5)
+
+```
+
+This can be a useful way to show the data – it gives additional information on hovering and allows you to zoom in or out, for example.
+
+## Plotly boxplot
+
+Next up is the boxplot. We’re going to do some pre-processing here to show only the neighborhoods with the most rentals.
+
+After we’ve done that subsetting, the process for creating the boxplot is similar to above: define the dataset, specify the mappings, pick a plot type. Here the type is box, and there aren’t modes to choose from.
+
+```{r}
+
+common_neighborhoods =
+  nyc_airbnb %>% 
+  # count the # of occurence by neighbourhodd and sort it from the largest to the smallest
+  count(neighbourhood, sort = TRUE) %>% 
+  # display only the 8 largest neighbourhood
+  top_n(8) %>% 
+  # keep only neighbourhood variable
+  select(neighbourhood)
+
+# kept only the data for the above 8 neighbourhoods
+inner_join(nyc_airbnb, common_neighborhoods, by = "neighbourhood") %>% 
+  # reorder the level of neighbourhood and price
+  mutate(neighbourhood = fct_reorder(neighbourhood, price)) %>% 
+  plot_ly(y = ~price, color = ~neighbourhood, type = "box",
+          colors = "Set2")
+
+```
+
+Again, this can be helpful – we have a five-number summary when we hover, and by clicking we can select groups we want to include or exclude.
+
+## Plotly barchart
+
+Lastly, we’ll make a bar chart. Plotly expects data in a specific format for bar charts, so we use count to get the number of rentals in each neighborhood (i.e. to get the bar height). Otherwise, the process should seem pretty familiar …
+
+```{r}
+
+nyc_airbnb %>% 
+  count(neighbourhood) %>% 
+  mutate(neighbourhood = fct_reorder(neighbourhood, n)) %>% 
+  plot_ly(x = ~neighbourhood, y = ~n, color = ~neighbourhood, type = "bar")
+
+```
+
+nteractivity in bar charts is kinda neat, but needs a bit more justification – you can zoom, which helps in some cases, or you could build in some addition information in hover text.
+
+## ggplotly
+
+You can convert a ggplot object straight to an interactive graphic using ggplotly.
+
+For example, the code below recreates our scatterplot using ggplot followed by ggplotly.
+
+```{r}
+
+scatter_ggplot = 
+  nyc_airbnb %>%
+  ggplot(aes(x = lat, y = long, color = price)) +
+  geom_point(alpha = 0.25) +
+  scale_color_viridis() +
+  coord_cartesian() +
+  theme_classic()
+
+ggplotly(scatter_ggplot)
+
+```
+
+We can recreate our boxplot in a similar way.
+
+```{r}
+
+box_ggplot = 
+  inner_join(nyc_airbnb, common_neighborhoods,
+             by = "neighbourhood") %>% 
+  mutate(neighbourhood = fct_reorder(neighbourhood, price)) %>% 
+  ggplot(aes(x = neighbourhood, y = price, fill = neighbourhood)) +
+  geom_boxplot() +
+  theme_classic() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplotly(box_ggplot)
+
+```
+
+If I really want an interactive plot to look good, I’ll use plot_ly to build it – ggplot was designed with static plots in mind, and the formatting and behavior of ggplotly is less visually appealing (to me) than plot_ly.
+
+I use ggplot for static plots, and I make static plots way, way more frequently than interactive plots. Sometimes I’ll use ggplotly on top of that for some quick interactivity; this can be handy to do some zooming or inspect outlying features.
+
+## flexdashboard
+
