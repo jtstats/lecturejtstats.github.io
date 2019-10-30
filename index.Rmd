@@ -14,11 +14,13 @@ You can learn abour me [here](about_me.html).
 
 # Let's add some links!
 
-I often use [google](google.com) to do **data science**.
+I often use [google](https://www.google.com) to do **data science**.
 
 # Let's add an image!
 
 Here's my puppy!
+
+<img src="images/my_puppy_1.jpg" style="width:75%">
 
 ![](./images/my_puppy.png)
 
